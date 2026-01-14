@@ -1,5 +1,5 @@
 {
-  "name": "voice-guide-widget",
+  "name": "ai-voice-guide",
   "main": "src/index.js", // Make sure your script is in src/index.js
   "compatibility_date": "2024-12-01",
   "observability": {
