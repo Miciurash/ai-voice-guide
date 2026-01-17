@@ -52,6 +52,13 @@ The widget exposes basic tools so Gemini can act on the page:
 - `scroll`: scroll up/down (or to top/bottom), optionally within a container.
 - `scroll_to`: scroll to an element by CSS selector.
 
+It also exposes a more general browser-action tool:
+- `agent_browser`: perform common UI actions on the client (click, fill/type, focus, hover, key presses, select, check/uncheck, scroll, scroll-into-view, simple drag, navigate, snapshot).
+
+Notes / limitations:
+- `upload`, `screenshot`, `pdf`: intentionally return `not_supported` (browser security restrictions in an embedded widget).
+- `eval`: denied unless `VOICE_GUIDE_CONFIG.debug = true`.
+
 You can extend this approach to support richer navigation (open menus, click buttons, route to URLs, search site content, etc.).
 
 ## Memory across page loads (localStorage)
@@ -80,6 +87,30 @@ wrangler dev
 ```
 
 Open [test_client.html](test_client.html) to load the widget from `http://localhost:8787/guide.js`.
+
+## Testing UI actions (click/type/etc)
+
+Set `VOICE_GUIDE_CONFIG.debug = true` and use DevTools on the page.
+
+The widget exposes a debug-only helper:
+- `window.VOICE_GUIDE_TEST`
+
+Examples (paste in the browser console):
+- `await VOICE_GUIDE_TEST.agentBrowser({ action: "snapshot" })`
+- `await VOICE_GUIDE_TEST.agentBrowser({ action: "click", selector: "h1" })`
+- `await VOICE_GUIDE_TEST.agentBrowser({ action: "scroll", direction: "down", px: 600 })`
+- `await VOICE_GUIDE_TEST.readPage()`
+
+If the mic is not connected, tool responses will be logged as:
+`VoiceGuide toolResponse (no socket): ...`
+
+### Voice-driven test phrases
+
+With the mic on, try saying:
+- "Scroll to the deep section and click the Deep Click button"
+- "Fill the Name field with Mircea and select Pro"
+- "Check Agree to terms and submit the form"
+- "Read the page and tell me what the form status says"
 
 ## Deploy
 

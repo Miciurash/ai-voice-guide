@@ -59,10 +59,18 @@ export default {
         const server = pair[1];
         server.accept();
 
+        const toValidCloseCode = (code) => {
+          const n = Number(code);
+          // Reserved/invalid close codes in WebSocket protocol.
+          const reserved = new Set([1005, 1006, 1015]);
+          if (!Number.isFinite(n) || n < 1000 || n > 4999 || reserved.has(n)) return 1000;
+          return n;
+        };
+
         const closeIfOpen = (socket, code, reason) => {
           if (!socket) return;
           if (socket.readyState === 0 || socket.readyState === 1) {
-            socket.close(code, reason);
+            socket.close(toValidCloseCode(code), reason);
           }
         };
 
@@ -134,7 +142,7 @@ class VoiceGuide extends HTMLElement {
       : "gemini-2.5-flash-native-audio-preview-12-2025";
     const systemInstruction = typeof globalConfig.systemInstruction === "string"
       ? globalConfig.systemInstruction
-      : "You are a helpful, concise voice assistant for this website. Answer questions about the current page and help the user navigate.";
+      : "You are a helpful, concise voice assistant for this website. You can control the page using tools. When the user asks to interact with the UI (click buttons, fill fields, select options, check checkboxes, press keys, open links, scroll, etc.), you MUST call the appropriate tool instead of only describing what to do. Use agent_browser.snapshot to discover likely selectors when needed, then use agent_browser.click/fill/type/select/check/uncheck/press/scroll/scrollintoview to execute. Use read_page to read page text when asked to summarize or verify content. You can also draw into an on-page canvas using canvas_draw (default canvas is #ai-canvas). After each action, briefly confirm what you did and what changed. Avoid destructive actions unless the user confirms.";
     const languageCode = typeof globalConfig.languageCode === "string" ? globalConfig.languageCode : "en-US";
     const protocols = Array.isArray(globalConfig.protocols) ? globalConfig.protocols.filter(Boolean) : [];
     const debug = Boolean(globalConfig.debug);
@@ -236,6 +244,55 @@ class VoiceGuide extends HTMLElement {
                 description: "Reads key text from the current page so you can answer questions about it."
               },
               {
+                name: "agent_browser",
+                description: "Performs browser UI actions on the current page (click, type, fill, focus, hover, key presses, navigation, etc).",
+                parameters: {
+                  type: "object",
+                  properties: {
+                    action: {
+                      type: "string",
+                      enum: [
+                        "open",
+                        "click",
+                        "dblclick",
+                        "focus",
+                        "type",
+                        "fill",
+                        "press",
+                        "keydown",
+                        "keyup",
+                        "hover",
+                        "select",
+                        "check",
+                        "uncheck",
+                        "scroll",
+                        "scrollintoview",
+                        "drag",
+                        "upload",
+                        "screenshot",
+                        "pdf",
+                        "snapshot",
+                        "eval",
+                        "close"
+                      ]
+                    },
+                    url: { type: "string", description: "URL to navigate to (for action=open)." },
+                    selector: { type: "string", description: "CSS selector for the target element." },
+                    text: { type: "string", description: "Text to type/fill (for action=type/fill)." },
+                    key: { type: "string", description: "Key to press (for press/keydown/keyup), e.g. Enter, Tab, ArrowDown, Control+a." },
+                    value: { type: "string", description: "Value to select (for action=select)." },
+                    direction: { type: "string", enum: ["up", "down", "left", "right"], description: "Scroll direction (for action=scroll)." },
+                    px: { type: "number", description: "Pixels to scroll (for action=scroll)." },
+                    src: { type: "string", description: "Source selector (for action=drag)." },
+                    tgt: { type: "string", description: "Target selector (for action=drag)." },
+                    js: { type: "string", description: "JavaScript to evaluate (for action=eval)." },
+                    timeoutMs: { type: "number", description: "Optional timeout to wait for selector (best-effort)." },
+                    behavior: { type: "string", enum: ["smooth", "auto"], description: "Scroll behavior." }
+                  },
+                  required: ["action"]
+                }
+              },
+              {
                 name: "scroll",
                 description: "Scrolls the page (or a scrollable container) up/down by a given amount, or to top/bottom.",
                 parameters: {
@@ -259,6 +316,45 @@ class VoiceGuide extends HTMLElement {
                     selector: { type: "string", description: "A CSS selector for the target element." }
                   },
                   required: ["selector"]
+                }
+              },
+              {
+                name: "canvas_draw",
+                description: "Draws shapes/text into a canvas element on the page (defaults to #ai-canvas).",
+                parameters: {
+                  type: "object",
+                  properties: {
+                    op: { type: "string", enum: ["clear", "set_style", "line", "rect", "circle", "text", "path"], description: "Drawing operation." },
+                    selector: { type: "string", description: "CSS selector for the target canvas element (optional)." },
+                    unit: { type: "string", enum: ["px", "percent"], description: "Coordinate unit: px or percent (0-100) of canvas size." },
+                    mode: { type: "string", enum: ["stroke", "fill", "fill_stroke"], description: "How to render shapes." },
+                    strokeStyle: { type: "string", description: "CSS color for strokes." },
+                    fillStyle: { type: "string", description: "CSS color for fills." },
+                    lineWidth: { type: "number", description: "Stroke width in px." },
+                    font: { type: "string", description: "Canvas font string, e.g. 16px sans-serif." },
+                    textAlign: { type: "string", enum: ["left", "center", "right"], description: "Text alignment." },
+                    x1: { type: "number" },
+                    y1: { type: "number" },
+                    x2: { type: "number" },
+                    y2: { type: "number" },
+                    x: { type: "number" },
+                    y: { type: "number" },
+                    w: { type: "number" },
+                    h: { type: "number" },
+                    r: { type: "number" },
+                    text: { type: "string" },
+                    points: {
+                      type: "array",
+                      items: {
+                        type: "object",
+                        properties: { x: { type: "number" }, y: { type: "number" } },
+                        required: ["x", "y"]
+                      }
+                    },
+                    closePath: { type: "boolean" },
+                    background: { type: "string", description: "For clear: background fill color." }
+                  },
+                  required: ["op"]
                 }
               }
             ]
@@ -321,7 +417,7 @@ class VoiceGuide extends HTMLElement {
           console.log("VoiceGuide text:", part.text);
         }
       }
-      if (msg.toolCall) this.handleTools(msg.toolCall);
+      if (msg.toolCall) await this.handleTools(msg.toolCall);
     };
 
     this.socket.onerror = (event) => {
@@ -338,79 +434,490 @@ class VoiceGuide extends HTMLElement {
   }
 
   async handleTools(toolCall) {
-    const call = toolCall.functionCalls?.[0];
-    if (!call) return;
-    let response = "";
-    if (call.name === "read_page") {
-      response = { text: document.body.innerText.slice(0, 2000) };
-    } else if (call.name === "scroll") {
-      const args = typeof call.args === "string" ? (() => { try { return JSON.parse(call.args); } catch { return {}; } })() : (call.args || {});
-      const behavior = args.behavior === "auto" ? "auto" : "smooth";
-      const selector = typeof args.selector === "string" ? args.selector : "";
+    const calls = toolCall.functionCalls || [];
+    if (!calls.length) return;
 
-      const targetEl = selector ? document.querySelector(selector) : null;
-      const scrollRoot = document.scrollingElement || document.documentElement;
-      const scrollTarget = targetEl || scrollRoot;
+    const parseArgs = (call) => {
+      if (!call) return {};
+      if (typeof call.args === "string") {
+        try { return JSON.parse(call.args); } catch { return {}; }
+      }
+      return call.args || {};
+    };
 
-      if (!scrollTarget) {
-        response = { status: "not_found", selector };
-      } else {
-        const to = typeof args.to === "string" ? args.to : "";
-        const isPage = scrollTarget === scrollRoot || scrollTarget === document.body || scrollTarget === document.documentElement;
+    const waitFor = async (selector, timeoutMs) => {
+      const ms = (typeof timeoutMs === "number" && Number.isFinite(timeoutMs) && timeoutMs > 0) ? timeoutMs : 0;
+      if (!selector || typeof selector !== "string") return null;
+      const start = Date.now();
+      while (true) {
+        const el = document.querySelector(selector);
+        if (el) return el;
+        if (!ms || Date.now() - start >= ms) return null;
+        await new Promise((r) => setTimeout(r, 50));
+      }
+    };
 
-        const scrollTo = (top) => {
-          if (isPage) {
-            window.scrollTo({ top, behavior });
+    const isEditable = (el) => {
+      if (!el) return false;
+      const tag = (el.tagName || "").toLowerCase();
+      if (tag === "input" || tag === "textarea") return true;
+      return Boolean(el.isContentEditable);
+    };
+
+    const setEditableValue = (el, value) => {
+      if (!el) return;
+      const tag = (el.tagName || "").toLowerCase();
+      if (tag === "input" || tag === "textarea") {
+        el.value = value;
+      } else if (el.isContentEditable) {
+        el.textContent = value;
+      }
+      el.dispatchEvent(new Event("input", { bubbles: true }));
+      el.dispatchEvent(new Event("change", { bubbles: true }));
+    };
+
+    const dispatchMouse = (el, type, extra = {}) => {
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      const clientX = rect.left + Math.min(rect.width / 2, 10);
+      const clientY = rect.top + Math.min(rect.height / 2, 10);
+      el.dispatchEvent(new MouseEvent(type, {
+        bubbles: true,
+        cancelable: true,
+        composed: true,
+        view: window,
+        clientX,
+        clientY,
+        ...extra
+      }));
+    };
+
+    const keySpec = (keyString) => {
+      const raw = typeof keyString === "string" ? keyString : "";
+      const parts = raw.split("+").map((p) => p.trim()).filter(Boolean);
+      const lower = parts.map((p) => p.toLowerCase());
+      const isCtrl = lower.includes("control") || lower.includes("ctrl");
+      const isMeta = lower.includes("meta") || lower.includes("cmd") || lower.includes("command");
+      const isAlt = lower.includes("alt") || lower.includes("option");
+      const isShift = lower.includes("shift");
+      const key = parts.length ? parts[parts.length - 1] : "";
+      return { key, ctrlKey: isCtrl, metaKey: isMeta, altKey: isAlt, shiftKey: isShift };
+    };
+
+    const dispatchKey = (type, keyString) => {
+      const el = document.activeElement || document.body;
+      const spec = keySpec(keyString);
+      el.dispatchEvent(new KeyboardEvent(type, {
+        bubbles: true,
+        cancelable: true,
+        composed: true,
+        key: spec.key,
+        ...spec
+      }));
+    };
+
+    const doScrollGeneric = (direction, px, behavior) => {
+      const dir = direction === "up" || direction === "down" || direction === "left" || direction === "right" ? direction : "down";
+      const amt = (typeof px === "number" && Number.isFinite(px)) ? px : 300;
+      const sign = (dir === "up" || dir === "left") ? -1 : 1;
+      const dx = (dir === "left" || dir === "right") ? sign * amt : 0;
+      const dy = (dir === "up" || dir === "down") ? sign * amt : 0;
+      window.scrollBy({ left: dx, top: dy, behavior });
+    };
+
+    const doSnapshot = () => {
+      const candidates = Array.from(document.querySelectorAll(
+        "a,button,input,select,textarea,[role='button'],[role='link'],[onclick],[tabindex]"
+      ));
+      const unique = [];
+      const seen = new Set();
+      for (const el of candidates) {
+        if (!(el instanceof Element)) continue;
+        if (el.getClientRects().length === 0) continue;
+        const key = el.tagName + "|" + (el.id || "") + "|" + (el.className || "") + "|" + (el.getAttribute("name") || "");
+        if (seen.has(key)) continue;
+        seen.add(key);
+        unique.push(el);
+        if (unique.length >= 60) break;
+      }
+      const items = unique.map((el, idx) => {
+        const tag = (el.tagName || "").toLowerCase();
+        const role = el.getAttribute("role") || undefined;
+        const label = (el.getAttribute("aria-label") || "").trim();
+        const text = (el.textContent || "").trim().replace(/\s+/g, " ").slice(0, 80);
+        const name = label || text || (el.getAttribute("name") || "") || (el.id ? ("#" + el.id) : "");
+        let selector = "";
+        if (el.id) selector = "#" + CSS.escape(el.id);
+        else if (el.getAttribute("name")) selector = tag + "[name='" + el.getAttribute("name").replace(/'/g, "\\'") + "']";
+        else if (el.classList && el.classList.length) selector = tag + "." + Array.from(el.classList).slice(0, 2).map((c) => CSS.escape(c)).join(".");
+        else selector = tag;
+        return { ref: "ref:" + (idx + 1), tag, role, name, selector };
+      });
+      return { items };
+    };
+
+    const functionResponses = [];
+    for (const call of calls) {
+      const args = parseArgs(call);
+      let response = {};
+
+      try {
+        if (call.name === "read_page") {
+          response = { text: document.body.innerText.slice(0, 2000) };
+        } else if (call.name === "scroll") {
+          // Existing rich scroll tool
+          const behavior = args.behavior === "auto" ? "auto" : "smooth";
+          const selector = typeof args.selector === "string" ? args.selector : "";
+          const targetEl = selector ? document.querySelector(selector) : null;
+          const scrollRoot = document.scrollingElement || document.documentElement;
+          const scrollTarget = targetEl || scrollRoot;
+
+          if (!scrollTarget) {
+            response = { status: "not_found", selector };
           } else {
-            scrollTarget.scrollTo({ top, behavior });
+            const to = typeof args.to === "string" ? args.to : "";
+            const isPage = scrollTarget === scrollRoot || scrollTarget === document.body || scrollTarget === document.documentElement;
+            const scrollTo = (top) => {
+              if (isPage) window.scrollTo({ top, behavior });
+              else scrollTarget.scrollTo({ top, behavior });
+            };
+            if (to === "top") {
+              scrollTo(0);
+              response = { status: "scrolled", to: "top", selector: selector || undefined };
+            } else if (to === "bottom") {
+              const maxTop = Math.max(0, scrollTarget.scrollHeight - scrollTarget.clientHeight);
+              scrollTo(maxTop);
+              response = { status: "scrolled", to: "bottom", selector: selector || undefined };
+            } else {
+              const direction = args.direction === "up" ? "up" : "down";
+              const unit = args.unit === "px" || args.unit === "percent" || args.unit === "viewport" ? args.unit : "viewport";
+              const rawAmount = (typeof args.amount === "number" && Number.isFinite(args.amount)) ? args.amount : 0.85;
+              const sign = direction === "up" ? -1 : 1;
+              let deltaY;
+              if (unit === "px") {
+                deltaY = sign * rawAmount;
+              } else if (unit === "percent") {
+                const scrollRange = Math.max(0, scrollTarget.scrollHeight - scrollTarget.clientHeight);
+                deltaY = sign * (rawAmount / 100) * scrollRange;
+              } else {
+                deltaY = sign * rawAmount * window.innerHeight;
+              }
+              if (isPage) window.scrollBy({ top: deltaY, behavior });
+              else scrollTarget.scrollBy({ top: deltaY, behavior });
+              response = { status: "scrolled", direction, amount: rawAmount, unit, selector: selector || undefined };
+            }
           }
-        };
+        } else if (call.name === "scroll_to") {
+          const selector = args.selector;
+          if (typeof selector === "string" && selector.length) {
+            document.querySelector(selector)?.scrollIntoView({ behavior: "smooth" });
+          }
+          response = { status: "scrolled" };
+        } else if (call.name === "canvas_draw") {
+          const op = typeof args.op === "string" ? args.op : "";
+          const selector = typeof args.selector === "string" && args.selector.length ? args.selector : "#ai-canvas";
+          const unit = args.unit === "percent" ? "percent" : "px";
+          const mode = (args.mode === "fill" || args.mode === "fill_stroke") ? args.mode : "stroke";
 
-        if (to === "top") {
-          scrollTo(0);
-          response = { status: "scrolled", to: "top", selector: selector || undefined };
-        } else if (to === "bottom") {
-          const maxTop = Math.max(0, scrollTarget.scrollHeight - scrollTarget.clientHeight);
-          scrollTo(maxTop);
-          response = { status: "scrolled", to: "bottom", selector: selector || undefined };
+          const canvas = document.querySelector(selector);
+          if (!(canvas instanceof HTMLCanvasElement)) {
+            response = { status: "not_found", selector };
+          } else {
+            const ctx = canvas.getContext("2d");
+            if (!ctx) {
+              response = { status: "error", error: "Canvas 2D context not available", selector };
+            } else {
+              const toPxX = (v) => {
+                const n = (typeof v === "number" && Number.isFinite(v)) ? v : 0;
+                return unit === "percent" ? (n / 100) * canvas.width : n;
+              };
+              const toPxY = (v) => {
+                const n = (typeof v === "number" && Number.isFinite(v)) ? v : 0;
+                return unit === "percent" ? (n / 100) * canvas.height : n;
+              };
+
+              // Apply style (optional)
+              if (typeof args.strokeStyle === "string") ctx.strokeStyle = args.strokeStyle;
+              if (typeof args.fillStyle === "string") ctx.fillStyle = args.fillStyle;
+              if (typeof args.lineWidth === "number" && Number.isFinite(args.lineWidth) && args.lineWidth > 0) ctx.lineWidth = args.lineWidth;
+              if (typeof args.font === "string" && args.font.trim()) ctx.font = args.font;
+              if (args.textAlign === "left" || args.textAlign === "center" || args.textAlign === "right") ctx.textAlign = args.textAlign;
+
+              const renderShape = () => {
+                if (mode === "fill") {
+                  ctx.fill();
+                } else if (mode === "fill_stroke") {
+                  ctx.fill();
+                  ctx.stroke();
+                } else {
+                  ctx.stroke();
+                }
+              };
+
+              if (op === "clear") {
+                const bg = typeof args.background === "string" ? args.background : "#ffffff";
+                ctx.save();
+                ctx.setTransform(1, 0, 0, 1, 0, 0);
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.fillStyle = bg;
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.restore();
+                response = { status: "ok", op, selector, background: bg };
+              } else if (op === "set_style") {
+                response = {
+                  status: "ok",
+                  op,
+                  selector,
+                  strokeStyle: ctx.strokeStyle,
+                  fillStyle: ctx.fillStyle,
+                  lineWidth: ctx.lineWidth,
+                  font: ctx.font,
+                  textAlign: ctx.textAlign
+                };
+              } else if (op === "line") {
+                const x1 = toPxX(args.x1);
+                const y1 = toPxY(args.y1);
+                const x2 = toPxX(args.x2);
+                const y2 = toPxY(args.y2);
+                ctx.beginPath();
+                ctx.moveTo(x1, y1);
+                ctx.lineTo(x2, y2);
+                ctx.stroke();
+                response = { status: "ok", op, selector };
+              } else if (op === "rect") {
+                const x = toPxX(args.x);
+                const y = toPxY(args.y);
+                const w = unit === "percent" ? (toPxX(args.w) - toPxX(0)) : (typeof args.w === "number" ? args.w : 0);
+                const h = unit === "percent" ? (toPxY(args.h) - toPxY(0)) : (typeof args.h === "number" ? args.h : 0);
+                if (mode === "fill") ctx.fillRect(x, y, w, h);
+                else if (mode === "fill_stroke") {
+                  ctx.fillRect(x, y, w, h);
+                  ctx.strokeRect(x, y, w, h);
+                } else ctx.strokeRect(x, y, w, h);
+                response = { status: "ok", op, selector };
+              } else if (op === "circle") {
+                const x = toPxX(args.x);
+                const y = toPxY(args.y);
+                const r = unit === "percent" ? (toPxX(args.r) - toPxX(0)) : (typeof args.r === "number" ? args.r : 0);
+                ctx.beginPath();
+                ctx.arc(x, y, Math.max(0, r), 0, Math.PI * 2);
+                renderShape();
+                response = { status: "ok", op, selector };
+              } else if (op === "text") {
+                const x = toPxX(args.x);
+                const y = toPxY(args.y);
+                const t = typeof args.text === "string" ? args.text.slice(0, 200) : "";
+                if (mode === "stroke") ctx.strokeText(t, x, y);
+                else if (mode === "fill_stroke") {
+                  ctx.fillText(t, x, y);
+                  ctx.strokeText(t, x, y);
+                } else ctx.fillText(t, x, y);
+                response = { status: "ok", op, selector, textLength: t.length };
+              } else if (op === "path") {
+                const pts = Array.isArray(args.points) ? args.points : [];
+                const closePath = Boolean(args.closePath);
+                if (!pts.length) {
+                  response = { status: "error", error: "Missing points", selector };
+                } else {
+                  ctx.beginPath();
+                  ctx.moveTo(toPxX(pts[0].x), toPxY(pts[0].y));
+                  for (let i = 1; i < pts.length; i++) {
+                    ctx.lineTo(toPxX(pts[i].x), toPxY(pts[i].y));
+                  }
+                  if (closePath) ctx.closePath();
+                  renderShape();
+                  response = { status: "ok", op, selector, points: pts.length, closePath };
+                }
+              } else {
+                response = { status: "error", error: "Unknown op", op, selector };
+              }
+            }
+          }
+        } else if (call.name === "agent_browser") {
+          const action = typeof args.action === "string" ? args.action : "";
+          const behavior = args.behavior === "auto" ? "auto" : "smooth";
+          const timeoutMs = args.timeoutMs;
+
+          if (action === "open") {
+            if (typeof args.url === "string" && args.url) {
+              window.location.href = args.url;
+              response = { status: "navigating", url: args.url };
+            } else {
+              response = { status: "error", error: "Missing url" };
+            }
+          } else if (action === "click" || action === "dblclick" || action === "focus" || action === "hover" || action === "scrollintoview") {
+            const selector = typeof args.selector === "string" ? args.selector : "";
+            const el = selector ? (await waitFor(selector, timeoutMs)) : null;
+            if (!el) {
+              response = { status: "not_found", selector };
+            } else {
+              if (action === "scrollintoview") {
+                el.scrollIntoView({ behavior, block: "center", inline: "center" });
+                response = { status: "scrolled", selector };
+              } else if (action === "focus") {
+                el.focus();
+                response = { status: "focused", selector };
+              } else if (action === "hover") {
+                dispatchMouse(el, "mousemove");
+                dispatchMouse(el, "mouseover");
+                dispatchMouse(el, "mouseenter");
+                response = { status: "hovered", selector };
+              } else if (action === "dblclick") {
+                dispatchMouse(el, "mousedown");
+                dispatchMouse(el, "mouseup");
+                dispatchMouse(el, "click");
+                dispatchMouse(el, "mousedown");
+                dispatchMouse(el, "mouseup");
+                dispatchMouse(el, "click");
+                dispatchMouse(el, "dblclick");
+                if (typeof el.click === "function") el.click();
+                response = { status: "clicked", click: "double", selector };
+              } else {
+                dispatchMouse(el, "mousedown");
+                dispatchMouse(el, "mouseup");
+                dispatchMouse(el, "click");
+                if (typeof el.click === "function") el.click();
+                response = { status: "clicked", selector };
+              }
+            }
+          } else if (action === "type" || action === "fill") {
+            const selector = typeof args.selector === "string" ? args.selector : "";
+            const text = typeof args.text === "string" ? args.text : "";
+            const el = selector ? (await waitFor(selector, timeoutMs)) : (document.activeElement || null);
+            if (!el) {
+              response = { status: "not_found", selector };
+            } else if (!isEditable(el)) {
+              response = { status: "error", error: "Target not editable", selector };
+            } else {
+              el.focus();
+              if (action === "fill") {
+                setEditableValue(el, text);
+              } else {
+                // type: append to existing
+                const tag = (el.tagName || "").toLowerCase();
+                if (tag === "input" || tag === "textarea") {
+                  setEditableValue(el, (el.value || "") + text);
+                } else if (el.isContentEditable) {
+                  setEditableValue(el, (el.textContent || "") + text);
+                }
+              }
+              response = { status: action === "fill" ? "filled" : "typed", selector: selector || undefined, length: text.length };
+            }
+          } else if (action === "press" || action === "keydown" || action === "keyup") {
+            const key = typeof args.key === "string" ? args.key : "";
+            if (!key) {
+              response = { status: "error", error: "Missing key" };
+            } else {
+              if (action === "press") {
+                dispatchKey("keydown", key);
+                dispatchKey("keyup", key);
+
+                // best-effort: submit on Enter
+                const spec = keySpec(key);
+                if (spec.key.toLowerCase() === "enter") {
+                  const el = document.activeElement;
+                  const form = el && el.form;
+                  if (form && typeof form.requestSubmit === "function") {
+                    try { form.requestSubmit(); } catch { /* ignore */ }
+                  }
+                }
+              } else {
+                dispatchKey(action, key);
+              }
+              response = { status: "ok", action, key };
+            }
+          } else if (action === "select") {
+            const selector = typeof args.selector === "string" ? args.selector : "";
+            const value = typeof args.value === "string" ? args.value : "";
+            const el = selector ? (await waitFor(selector, timeoutMs)) : null;
+            if (!el) {
+              response = { status: "not_found", selector };
+            } else if ((el.tagName || "").toLowerCase() !== "select") {
+              response = { status: "error", error: "Target is not a <select>", selector };
+            } else {
+              el.value = value;
+              el.dispatchEvent(new Event("input", { bubbles: true }));
+              el.dispatchEvent(new Event("change", { bubbles: true }));
+              response = { status: "selected", selector, value };
+            }
+          } else if (action === "check" || action === "uncheck") {
+            const selector = typeof args.selector === "string" ? args.selector : "";
+            const el = selector ? (await waitFor(selector, timeoutMs)) : null;
+            if (!el) {
+              response = { status: "not_found", selector };
+            } else if ((el.tagName || "").toLowerCase() !== "input" || (el.getAttribute("type") || "").toLowerCase() !== "checkbox") {
+              response = { status: "error", error: "Target is not a checkbox", selector };
+            } else {
+              el.checked = action === "check";
+              el.dispatchEvent(new Event("input", { bubbles: true }));
+              el.dispatchEvent(new Event("change", { bubbles: true }));
+              response = { status: action === "check" ? "checked" : "unchecked", selector };
+            }
+          } else if (action === "scroll") {
+            doScrollGeneric(args.direction, args.px, behavior);
+            response = { status: "scrolled", direction: args.direction || "down", px: args.px || 300 };
+          } else if (action === "drag") {
+            const srcSel = typeof args.src === "string" ? args.src : "";
+            const tgtSel = typeof args.tgt === "string" ? args.tgt : "";
+            const srcEl = srcSel ? (await waitFor(srcSel, timeoutMs)) : null;
+            const tgtEl = tgtSel ? (await waitFor(tgtSel, timeoutMs)) : null;
+            if (!srcEl || !tgtEl) {
+              response = { status: "not_found", src: srcSel || undefined, tgt: tgtSel || undefined };
+            } else {
+              // Best-effort drag via mouse events.
+              dispatchMouse(srcEl, "mousedown");
+              dispatchMouse(srcEl, "mousemove");
+              dispatchMouse(tgtEl, "mousemove");
+              dispatchMouse(tgtEl, "mouseup");
+              response = { status: "ok", action: "drag", src: srcSel, tgt: tgtSel };
+            }
+          } else if (action === "snapshot") {
+            response = doSnapshot();
+          } else if (action === "eval") {
+            const config = this.getConfig();
+            if (!config.debug) {
+              response = { status: "denied", reason: "Enable debug to allow eval" };
+            } else if (typeof args.js !== "string" || !args.js.trim()) {
+              response = { status: "error", error: "Missing js" };
+            } else {
+              // Best-effort eval; returns JSON-safe result.
+              let result;
+              try { result = (0, eval)(args.js); } catch (e) { result = { error: String(e?.message || e) }; }
+              try {
+                response = { status: "ok", result: JSON.parse(JSON.stringify(result)) };
+              } catch {
+                response = { status: "ok", result: String(result) };
+              }
+            }
+          } else if (action === "upload" || action === "screenshot" || action === "pdf") {
+            response = { status: "not_supported", action, reason: "Browser security restrictions in an embedded widget" };
+          } else if (action === "close") {
+            window.close();
+            response = { status: "ok", action: "close" };
+          } else {
+            response = { status: "error", error: "Unknown action", action };
+          }
         } else {
-          const direction = args.direction === "up" ? "up" : "down";
-          const unit = args.unit === "px" || args.unit === "percent" || args.unit === "viewport" ? args.unit : "viewport";
-          const rawAmount = (typeof args.amount === "number" && Number.isFinite(args.amount)) ? args.amount : 0.85;
-          const sign = direction === "up" ? -1 : 1;
-
-          let deltaY;
-          if (unit === "px") {
-            deltaY = sign * rawAmount;
-          } else if (unit === "percent") {
-            const scrollRange = Math.max(0, scrollTarget.scrollHeight - scrollTarget.clientHeight);
-            deltaY = sign * (rawAmount / 100) * scrollRange;
-          } else {
-            // "viewport": fraction of viewport height
-            deltaY = sign * rawAmount * window.innerHeight;
-          }
-
-          if (isPage) {
-            window.scrollBy({ top: deltaY, behavior });
-          } else {
-            scrollTarget.scrollBy({ top: deltaY, behavior });
-          }
-          response = { status: "scrolled", direction, amount: rawAmount, unit, selector: selector || undefined };
+          response = { status: "error", error: "Unknown tool", name: call.name };
         }
+      } catch (e) {
+        response = { status: "error", error: String(e?.message || e) };
       }
-    } else if (call.name === "scroll_to") {
-      const args = typeof call.args === "string" ? (() => { try { return JSON.parse(call.args); } catch { return {}; } })() : (call.args || {});
-      const selector = args.selector;
-      if (typeof selector === "string" && selector.length) {
-        document.querySelector(selector)?.scrollIntoView({ behavior: 'smooth' });
-      }
-      response = { status: "scrolled" };
+
+      functionResponses.push({ id: call.id, name: call.name, response });
     }
-    this.socket.send(JSON.stringify({
-      toolResponse: {
-        functionResponses: [{ id: call.id, name: call.name, response }]
-      }
-    }));
+
+    const payload = JSON.stringify({
+      toolResponse: { functionResponses }
+    });
+
+    if (this.socket && this.socket.readyState === 1) {
+      this.socket.send(payload);
+    } else if (this.getConfig().debug) {
+      console.log("VoiceGuide toolResponse (no socket):", payload);
+    }
+
+    return functionResponses;
   }
 
   _enqueueAfterSetup(fn) {
@@ -548,6 +1055,50 @@ class VoiceGuide extends HTMLElement {
   }
 }
 customElements.define('voice-guide', VoiceGuide);
-document.body.appendChild(document.createElement('voice-guide'));
+const __vgEl = document.createElement('voice-guide');
+document.body.appendChild(__vgEl);
+
+try {
+  const __cfg = (typeof window !== "undefined" && window.VOICE_GUIDE_CONFIG) ? window.VOICE_GUIDE_CONFIG : {};
+  if (__cfg && __cfg.debug) {
+    const makeId = () => {
+      try {
+        return (crypto && typeof crypto.randomUUID === "function") ? crypto.randomUUID() : String(Date.now());
+      } catch {
+        return String(Date.now());
+      }
+    };
+    window.VOICE_GUIDE_TEST = {
+      callTool: async (name, args) => {
+        return await __vgEl.handleTools({
+          functionCalls: [{ id: makeId(), name, args: args || {} }]
+        });
+      },
+      agentBrowser: async (args) => {
+        return await __vgEl.handleTools({
+          functionCalls: [{ id: makeId(), name: "agent_browser", args: args || {} }]
+        });
+      },
+      scroll: async (args) => {
+        return await __vgEl.handleTools({
+          functionCalls: [{ id: makeId(), name: "scroll", args: args || {} }]
+        });
+      },
+      scrollTo: async (selector) => {
+        return await __vgEl.handleTools({
+          functionCalls: [{ id: makeId(), name: "scroll_to", args: { selector } }]
+        });
+      },
+      readPage: async () => {
+        return await __vgEl.handleTools({
+          functionCalls: [{ id: makeId(), name: "read_page", args: {} }]
+        });
+      }
+    };
+    console.log("VOICE_GUIDE_TEST is available for manual tool testing.");
+  }
+} catch {
+  // ignore
+}
   `;
 }

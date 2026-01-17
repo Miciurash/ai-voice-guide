@@ -5,189 +5,428 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Voice Guide Test</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+            line-height: 1.4;
+            margin: 24px;
+            padding-bottom: 160px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            align-items: start;
+        }
+
+        .card {
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 14px;
+            background: #fff;
+        }
+
+        .row {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .row>* {
+            margin: 0;
+        }
+
+        label {
+            display: inline-flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        input[type="text"],
+        textarea,
+        select {
+            width: 100%;
+            max-width: 520px;
+            padding: 10px;
+            border: 1px solid #d1d5db;
+            border-radius: 10px;
+        }
+
+        button {
+            border: 1px solid #d1d5db;
+            background: #f9fafb;
+            border-radius: 10px;
+            padding: 10px 12px;
+            cursor: pointer;
+        }
+
+        button.primary {
+            background: #111827;
+            color: #fff;
+            border-color: #111827;
+        }
+
+        .pill {
+            display: inline-block;
+            padding: 6px 10px;
+            border-radius: 999px;
+            background: #eef2ff;
+            border: 1px solid #c7d2fe;
+            font-size: 12px;
+        }
+
+        .box {
+            border: 2px dashed #cbd5e1;
+            border-radius: 12px;
+            padding: 14px;
+            min-height: 70px;
+            background: #f8fafc;
+        }
+
+        .box.active {
+            border-color: #16a34a;
+            background: #ecfdf5;
+        }
+
+        .draggable {
+            display: inline-block;
+            padding: 10px 12px;
+            border-radius: 10px;
+            background: #fff7ed;
+            border: 1px solid #fed7aa;
+            user-select: none;
+        }
+
+        #event-log {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+            white-space: pre-wrap;
+            background: #0b1220;
+            color: #e5e7eb;
+            border-radius: 12px;
+            padding: 12px;
+            min-height: 160px;
+            max-height: 260px;
+            overflow: auto;
+        }
+
+        .spacer {
+            height: 900px;
+            background: linear-gradient(180deg, rgba(243, 244, 246, 0.4), rgba(255, 255, 255, 0));
+            border-radius: 12px;
+            margin: 16px 0;
+        }
+
+        #ai-canvas {
+            width: 100%;
+            max-width: 520px;
+            height: auto;
+            border: 1px solid #d1d5db;
+            border-radius: 12px;
+            background: #ffffff;
+            display: block;
+        }
+
+        .hint {
+            color: #4b5563;
+            font-size: 13px;
+            margin-top: 8px;
+        }
+    </style>
 </head>
 
 <body>
     <h1>Voice Guide Test Page</h1>
     <p>The voice guide widget should appear in the bottom right.</p>
-    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore
-        magna aliqua.</p>
-    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore
-        magna aliqua.</p>
-    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore
-        magna aliqua.</p>
-    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore
-        magna aliqua.</p>
-    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore
-        magna aliqua.</p>
-    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore
-        magna aliqua.</p>
-    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore
-        magna aliqua.</p>
-    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore
-        magna aliqua.</p>
-    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore
-        magna aliqua.</p>
-    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore
-        magna aliqua.</p>
-    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore
-        magna aliqua.</p>
-    v
-    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore
-        magna aliqua.</p>
-    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore
-        magna aliqua.</p>
-    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore
-        magna aliqua.</p>
-    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore
-        magna aliqua.</p>
-    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore
-        magna aliqua.</p>
-    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore
-        magna aliqua.</p>
-    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore
-        magna aliqua.</p>
-    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore
-        magna aliqua.</p>
-    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore
-        magna aliqua.</p>
-    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore
-        magna aliqua.</p>
-    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore
-        magna aliqua.</p>
-    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore
-        magna aliqua.</p>
-    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore
-        magna aliqua.</p>
-    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore
-        magna aliqua.</p>
-    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore
-        magna aliqua.</p>
-    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore
-        magna aliqua.</p>
-    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore
-        magna aliqua.</p>
-    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore
-        magna aliqua.</p>
-    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore
-        magna aliqua.</p>
-    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore
-        magna aliqua.</p>
-    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore
-        magna aliqua.</p>
-    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore
-        magna aliqua.</p>
-    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore
-        magna aliqua.</p>
-    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore
-        magna aliqua.</p>
-    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore
-        magna aliqua.</p>
-    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore
-        magna aliqua.</p>
-    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore
-        magna aliqua.</p>
-    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore
-        magna aliqua.</p>
-    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore
-        magna aliqua.</p>
-    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore
-        magna aliqua.</p>
-    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore
-        magna aliqua.</p>
-    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore
-        magna aliqua.</p>
-    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore
-        magna aliqua.</p>
-    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore
-        magna aliqua.</p>
-    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore
-        magna aliqua.</p>
-    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore
-        magna aliqua.</p>
-    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore
-        magna aliqua.</p>
-    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore
-        magna aliqua.</p>
-    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore
-        magna aliqua.</p>
-    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore
-        magna aliqua.</p>
-    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore
-        magna aliqua.</p>
-    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore
-        magna aliqua.</p>
-    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore
-        magna aliqua.</p>
-    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore
-        magna aliqua.</p>
-    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore
-        magna aliqua.</p>
-    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore
-        magna aliqua.</p>
-    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore
-        magna aliqua.</p>
-    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore
-        magna aliqua.</p>
-    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore
-        magna aliqua.</p>
-    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore
-        magna aliqua.</p>
-    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore
-        magna aliqua.</p>
-    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore
-        magna aliqua.</p>
-    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore
-        magna aliqua.</p>
-    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore
-        magna aliqua.</p>
-    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore
-        magna aliqua.</p>
-    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore
-        magna aliqua.</p>
-    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore
-        magna aliqua.</p>
-    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore
-        magna aliqua.</p>
-    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore
-        magna aliqua.</p>
-    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore
-        magna aliqua.</p>
-    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore
-        magna aliqua.</p>
-    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore
-        magna aliqua.</p>
-    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore
-        magna aliqua.</p>
-    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore
-        magna aliqua.</p>
-    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore
-        magna aliqua.</p>
-    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore
-        magna aliqua.</p>
-    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore
-        magna aliqua.</p>
-    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore
-        magna aliqua.</p>
-    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore
-        magna aliqua.</p>
-    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore
-        magna aliqua.</p>
-    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore
-        magna aliqua.</p>
-    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore
-        magna aliqua.</p>
-    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore
-        magna aliqua.</p>
-    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore
-        magna aliqua.</p>
-    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore
-        magna aliqua.</p>
+    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</p>
+    <div class="grid">
+        <section class="card" id="playground">
+            <h2>Playground</h2>
+            <p class="pill">Use these to test click / fill / select / check / press / scroll.</p>
 
-    <!-- Load the script from the local worker -->
+            <div class="row" style="margin: 10px 0;">
+                <button id="btn-click" class="primary" type="button">Click me</button>
+                <button id="btn-reset" type="button">Reset counter</button>
+                <span>Clicks: <strong id="click-count">0</strong></span>
+            </div>
+
+            <div class="row" style="margin: 10px 0;">
+                <div id="dblclick-box" class="box" tabindex="0" role="button" aria-label="Double click box">
+                    Double-click me (or focus and press Enter)
+                </div>
+            </div>
+
+            <hr />
+
+            <form id="demo-form" class="card" style="padding: 12px;">
+                <h3 style="margin-top:0;">Form</h3>
+
+                <div style="margin: 10px 0;">
+                    <label for="name-input">Name</label><br />
+                    <input id="name-input" name="name" type="text" placeholder="Type your name" autocomplete="off" />
+                </div>
+
+                <div style="margin: 10px 0;">
+                    <label for="notes-textarea">Notes</label><br />
+                    <textarea id="notes-textarea" name="notes" rows="3" placeholder="Type some notes"></textarea>
+                </div>
+
+                <div style="margin: 10px 0;">
+                    <label for="plan-select">Plan</label><br />
+                    <select id="plan-select" name="plan">
+                        <option value="free">Free</option>
+                        <option value="pro">Pro</option>
+                        <option value="enterprise">Enterprise</option>
+                    </select>
+                </div>
+
+                <div class="row" style="margin: 10px 0;">
+                    <label><input id="agree-checkbox" type="checkbox" /> Agree to terms</label>
+                    <label><input id="subscribe-checkbox" type="checkbox" /> Subscribe</label>
+                </div>
+
+                <div class="row" style="margin: 10px 0;">
+                    <button id="submit-btn" class="primary" type="submit">Submit</button>
+                    <button id="focus-name" type="button">Focus name</button>
+                </div>
+
+                <div class="row" style="margin: 10px 0;">
+                    <span>Status:</span>
+                    <span id="form-status" class="pill">Idle</span>
+                </div>
+            </form>
+
+            <hr />
+
+            <h3>Contenteditable</h3>
+            <div id="editable" class="box" contenteditable="true" aria-label="Editable text box">Edit me</div>
+
+            <hr />
+
+            <h3>Drag & Drop (best-effort)</h3>
+            <div class="row" style="margin: 10px 0;">
+                <div id="drag-source" class="draggable" draggable="true">Drag source</div>
+                <div id="drop-target" class="box" aria-label="Drop target">Drop target</div>
+            </div>
+
+            <div class="row" style="margin: 10px 0;">
+                <a id="jump-link" href="#deep-section">Jump to deep section</a>
+                <button id="scroll-deep" type="button">ScrollIntoView deep section</button>
+            </div>
+        </section>
+
+        <section class="card" id="events">
+            <h2>Event Log</h2>
+            <p class="pill">Watch this to confirm actions triggered.</p>
+            <div id="event-log" aria-live="polite"></div>
+            <div class="row" style="margin-top: 10px;">
+                <button id="clear-log" type="button">Clear log</button>
+                <button id="add-text" type="button">Add more content below</button>
+            </div>
+        </section>
+
+        <section class="card" id="canvas-card">
+            <h2>Canvas</h2>
+            <p class="pill">Voice can draw here via <strong>canvas_draw</strong>.</p>
+            <canvas id="ai-canvas" width="520" height="320" aria-label="AI drawing canvas"></canvas>
+            <div class="row" style="margin-top: 10px;">
+                <button id="canvas-clear" type="button">Clear</button>
+                <button id="canvas-sample" type="button">Sample drawing</button>
+            </div>
+            <div class="hint">Tip: Say “draw a smiley face in the canvas” or “write ‘Hello’ in the canvas”.</div>
+        </section>
+    </div>
+
+    <div class="spacer" aria-hidden="true"></div>
+
+    <section class="card" id="deep-section">
+        <h2>Deep Section</h2>
+        <p>This section is far down the page so you can test scrolling and scrollIntoView.</p>
+        <button id="deep-click" class="primary" type="button">Deep Click</button>
+        <p id="deep-result" class="pill">Not clicked yet</p>
+    </section>
+
+    <script>
+        (function () {
+            const logEl = document.getElementById('event-log');
+            const log = (msg) => {
+                const time = new Date().toISOString().slice(11, 19);
+                logEl.textContent = `[${time}] ${msg}\n` + logEl.textContent;
+            };
+
+            const clickCountEl = document.getElementById('click-count');
+            let clickCount = 0;
+            const setCount = (n) => {
+                clickCount = n;
+                clickCountEl.textContent = String(clickCount);
+            };
+
+            document.getElementById('btn-click').addEventListener('click', () => {
+                setCount(clickCount + 1);
+                log(`btn-click: click -> count=${clickCount}`);
+            });
+
+            document.getElementById('btn-reset').addEventListener('click', () => {
+                setCount(0);
+                log('btn-reset: click -> counter reset');
+            });
+
+            const dblBox = document.getElementById('dblclick-box');
+            dblBox.addEventListener('dblclick', () => {
+                dblBox.classList.toggle('active');
+                log(`dblclick-box: dblclick -> active=${dblBox.classList.contains('active')}`);
+            });
+            dblBox.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    dblBox.classList.toggle('active');
+                    log(`dblclick-box: Enter -> active=${dblBox.classList.contains('active')}`);
+                }
+            });
+
+            const form = document.getElementById('demo-form');
+            const formStatus = document.getElementById('form-status');
+            const nameInput = document.getElementById('name-input');
+            const notes = document.getElementById('notes-textarea');
+            const plan = document.getElementById('plan-select');
+            const agree = document.getElementById('agree-checkbox');
+            const subscribe = document.getElementById('subscribe-checkbox');
+
+            nameInput.addEventListener('focus', () => log('name-input: focus'));
+            nameInput.addEventListener('input', () => log(`name-input: input -> ${nameInput.value}`));
+            notes.addEventListener('input', () => log(`notes-textarea: input -> len=${notes.value.length}`));
+            plan.addEventListener('change', () => log(`plan-select: change -> ${plan.value}`));
+            agree.addEventListener('change', () => log(`agree-checkbox: change -> ${agree.checked}`));
+            subscribe.addEventListener('change', () => log(`subscribe-checkbox: change -> ${subscribe.checked}`));
+
+            form.addEventListener('submit', (e) => {
+                e.preventDefault();
+                formStatus.textContent = `Submitted: ${nameInput.value || '(no name)'} / ${plan.value}`;
+                log(`demo-form: submit -> name=${nameInput.value || '(no name)'} plan=${plan.value}`);
+            });
+
+            document.getElementById('focus-name').addEventListener('click', () => {
+                nameInput.focus();
+                log('focus-name: click -> focused name-input');
+            });
+
+            const editable = document.getElementById('editable');
+            editable.addEventListener('input', () => {
+                log(`editable: input -> ${editable.textContent.trim().slice(0, 60)}`);
+            });
+
+            // Drag/drop demo
+            const dragSource = document.getElementById('drag-source');
+            const dropTarget = document.getElementById('drop-target');
+            dragSource.addEventListener('dragstart', (e) => {
+                try { e.dataTransfer.setData('text/plain', 'drag-source'); } catch { }
+                log('drag-source: dragstart');
+            });
+            dropTarget.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                dropTarget.classList.add('active');
+            });
+            dropTarget.addEventListener('dragleave', () => {
+                dropTarget.classList.remove('active');
+            });
+            dropTarget.addEventListener('drop', (e) => {
+                e.preventDefault();
+                dropTarget.classList.remove('active');
+                dropTarget.textContent = 'Dropped!';
+                log('drop-target: drop -> Dropped!');
+            });
+
+            document.getElementById('scroll-deep').addEventListener('click', () => {
+                document.getElementById('deep-section').scrollIntoView({ behavior: 'smooth' });
+                log('scroll-deep: click -> scrollIntoView deep-section');
+            });
+
+            document.getElementById('deep-click').addEventListener('click', () => {
+                document.getElementById('deep-result').textContent = 'Clicked!';
+                log('deep-click: click -> deep-result updated');
+            });
+
+            document.getElementById('clear-log').addEventListener('click', () => {
+                logEl.textContent = '';
+            });
+
+            document.getElementById('add-text').addEventListener('click', () => {
+                const p = document.createElement('p');
+                p.textContent = 'More content added at ' + new Date().toISOString();
+                document.body.insertBefore(p, document.getElementById('deep-section'));
+                log('add-text: click -> appended paragraph');
+            });
+
+            // Canvas helpers for manual testing
+            const canvas = document.getElementById('ai-canvas');
+            const ctx = canvas && canvas.getContext ? canvas.getContext('2d') : null;
+            const clearCanvas = () => {
+                if (!ctx) return;
+                ctx.save();
+                ctx.setTransform(1, 0, 0, 1, 0, 0);
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.restore();
+            };
+            const sampleDrawing = () => {
+                if (!ctx) return;
+                clearCanvas();
+                ctx.lineWidth = 4;
+                ctx.strokeStyle = '#111827';
+                ctx.fillStyle = '#fef3c7';
+                // face
+                ctx.beginPath();
+                ctx.arc(260, 160, 110, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+                // eyes
+                ctx.fillStyle = '#111827';
+                ctx.beginPath();
+                ctx.arc(220, 140, 10, 0, Math.PI * 2);
+                ctx.arc(300, 140, 10, 0, Math.PI * 2);
+                ctx.fill();
+                // smile
+                ctx.strokeStyle = '#111827';
+                ctx.beginPath();
+                ctx.arc(260, 175, 55, 0, Math.PI);
+                ctx.stroke();
+                // label
+                ctx.fillStyle = '#111827';
+                ctx.font = '16px system-ui, -apple-system, Segoe UI, Roboto, Arial';
+                ctx.fillText('Canvas ready for AI', 160, 300);
+            };
+
+            document.getElementById('canvas-clear')?.addEventListener('click', () => {
+                clearCanvas();
+                log('canvas: clear');
+            });
+            document.getElementById('canvas-sample')?.addEventListener('click', () => {
+                sampleDrawing();
+                log('canvas: sample drawing');
+            });
+
+            canvas?.addEventListener('click', (e) => {
+                if (!ctx) return;
+                const rect = canvas.getBoundingClientRect();
+                const x = ((e.clientX - rect.left) / rect.width) * canvas.width;
+                const y = ((e.clientY - rect.top) / rect.height) * canvas.height;
+                ctx.fillStyle = '#2563eb';
+                ctx.beginPath();
+                ctx.arc(x, y, 4, 0, Math.PI * 2);
+                ctx.fill();
+                log(`canvas: click dot at (${Math.round(x)}, ${Math.round(y)})`);
+            });
+
+            clearCanvas();
+
+            log('Page ready. Try VOICE_GUIDE_TEST.agentBrowser(...) in console.');
+        })();
+    </script>
+
+    <script>
+        window.VOICE_GUIDE_CONFIG = {
+            debug: true
+        };
+    </script>
     <script type="module" src="http://localhost:8787/guide.js"></script>
-
-    <!-- <script type="module" src="https://ai-voice-guide.sibi.workers.dev/guide.js"></script> -->
-</body>
-
-</html>
