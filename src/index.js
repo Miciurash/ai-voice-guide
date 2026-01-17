@@ -236,6 +236,21 @@ class VoiceGuide extends HTMLElement {
                 description: "Reads key text from the current page so you can answer questions about it."
               },
               {
+                name: "scroll",
+                description: "Scrolls the page (or a scrollable container) up/down by a given amount, or to top/bottom.",
+                parameters: {
+                  type: "object",
+                  properties: {
+                    direction: { type: "string", enum: ["up", "down"], description: "Scroll direction." },
+                    amount: { type: "number", description: "How far to scroll. Interpreted using unit." },
+                    unit: { type: "string", enum: ["px", "viewport", "percent"], description: "Units for amount: pixels, fraction of viewport height, or percent of scroll range." },
+                    to: { type: "string", enum: ["top", "bottom"], description: "Scroll directly to top/bottom (overrides direction/amount)." },
+                    selector: { type: "string", description: "Optional CSS selector of a scrollable container to scroll instead of the page." },
+                    behavior: { type: "string", enum: ["smooth", "auto"], description: "Scroll behavior." }
+                  }
+                }
+              },
+              {
                 name: "scroll_to",
                 description: "Scrolls the page to an element matching the provided CSS selector.",
                 parameters: {
@@ -328,6 +343,61 @@ class VoiceGuide extends HTMLElement {
     let response = "";
     if (call.name === "read_page") {
       response = { text: document.body.innerText.slice(0, 2000) };
+    } else if (call.name === "scroll") {
+      const args = typeof call.args === "string" ? (() => { try { return JSON.parse(call.args); } catch { return {}; } })() : (call.args || {});
+      const behavior = args.behavior === "auto" ? "auto" : "smooth";
+      const selector = typeof args.selector === "string" ? args.selector : "";
+
+      const targetEl = selector ? document.querySelector(selector) : null;
+      const scrollRoot = document.scrollingElement || document.documentElement;
+      const scrollTarget = targetEl || scrollRoot;
+
+      if (!scrollTarget) {
+        response = { status: "not_found", selector };
+      } else {
+        const to = typeof args.to === "string" ? args.to : "";
+        const isPage = scrollTarget === scrollRoot || scrollTarget === document.body || scrollTarget === document.documentElement;
+
+        const scrollTo = (top) => {
+          if (isPage) {
+            window.scrollTo({ top, behavior });
+          } else {
+            scrollTarget.scrollTo({ top, behavior });
+          }
+        };
+
+        if (to === "top") {
+          scrollTo(0);
+          response = { status: "scrolled", to: "top", selector: selector || undefined };
+        } else if (to === "bottom") {
+          const maxTop = Math.max(0, scrollTarget.scrollHeight - scrollTarget.clientHeight);
+          scrollTo(maxTop);
+          response = { status: "scrolled", to: "bottom", selector: selector || undefined };
+        } else {
+          const direction = args.direction === "up" ? "up" : "down";
+          const unit = args.unit === "px" || args.unit === "percent" || args.unit === "viewport" ? args.unit : "viewport";
+          const rawAmount = (typeof args.amount === "number" && Number.isFinite(args.amount)) ? args.amount : 0.85;
+          const sign = direction === "up" ? -1 : 1;
+
+          let deltaY;
+          if (unit === "px") {
+            deltaY = sign * rawAmount;
+          } else if (unit === "percent") {
+            const scrollRange = Math.max(0, scrollTarget.scrollHeight - scrollTarget.clientHeight);
+            deltaY = sign * (rawAmount / 100) * scrollRange;
+          } else {
+            // "viewport": fraction of viewport height
+            deltaY = sign * rawAmount * window.innerHeight;
+          }
+
+          if (isPage) {
+            window.scrollBy({ top: deltaY, behavior });
+          } else {
+            scrollTarget.scrollBy({ top: deltaY, behavior });
+          }
+          response = { status: "scrolled", direction, amount: rawAmount, unit, selector: selector || undefined };
+        }
+      }
     } else if (call.name === "scroll_to") {
       const args = typeof call.args === "string" ? (() => { try { return JSON.parse(call.args); } catch { return {}; } })() : (call.args || {});
       const selector = args.selector;

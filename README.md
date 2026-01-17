@@ -49,6 +49,7 @@ Add this snippet before the closing `</body>` tag (or anywhere after you define 
 
 The widget exposes basic tools so Gemini can act on the page:
 - `read_page`: read key text from the current document.
+- `scroll`: scroll up/down (or to top/bottom), optionally within a container.
 - `scroll_to`: scroll to an element by CSS selector.
 
 You can extend this approach to support richer navigation (open menus, click buttons, route to URLs, search site content, etc.).
