@@ -56,7 +56,8 @@ It also exposes a more general browser-action tool:
 - `agent_browser`: perform common UI actions on the client (click, fill/type, focus, hover, key presses, select, check/uncheck, scroll, scroll-into-view, simple drag, navigate, snapshot).
 
 Notes / limitations:
-- `upload`, `screenshot`, `pdf`: intentionally return `not_supported` (browser security restrictions in an embedded widget).
+- `upload`, `pdf`: intentionally return `not_supported` (browser security restrictions in an embedded widget).
+- `screenshot`: implemented best-effort by rendering the DOM to a canvas. By default it returns `inlineData` (base64 PNG) in the tool response so the model can analyze the image; optional `download: true` triggers a file download. Can fail on strict CSP pages or cross-origin images.
 - `eval`: denied unless `VOICE_GUIDE_CONFIG.debug = true`.
 
 You can extend this approach to support richer navigation (open menus, click buttons, route to URLs, search site content, etc.).

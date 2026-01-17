@@ -286,6 +286,14 @@ class VoiceGuide extends HTMLElement {
                     src: { type: "string", description: "Source selector (for action=drag)." },
                     tgt: { type: "string", description: "Target selector (for action=drag)." },
                     js: { type: "string", description: "JavaScript to evaluate (for action=eval)." },
+                    path: { type: "string", description: "Suggested filename for downloads (for screenshot/pdf)." },
+                    full: { type: "boolean", description: "Capture full page (for screenshot)." },
+                    download: { type: "boolean", description: "Whether to download the screenshot file (for screenshot)." },
+                    returnToModel: { type: "boolean", description: "Whether to include the screenshot image bytes in the tool response so the model can analyze it." },
+                    maxWidth: { type: "number", description: "Max output width in px (downscales if needed)." },
+                    maxHeight: { type: "number", description: "Max output height in px (downscales if needed)." },
+                    format: { type: "string", enum: ["jpeg", "png"], description: "Screenshot encoding format." },
+                    quality: { type: "number", description: "JPEG quality 0-1 (only for format=jpeg)." },
                     timeoutMs: { type: "number", description: "Optional timeout to wait for selector (best-effort)." },
                     behavior: { type: "string", enum: ["smooth", "auto"], description: "Scroll behavior." }
                   },
@@ -554,6 +562,74 @@ class VoiceGuide extends HTMLElement {
         return { ref: "ref:" + (idx + 1), tag, role, name, selector };
       });
       return { items };
+    };
+
+    const loadHtml2Canvas = async () => {
+      if (window.__VOICE_GUIDE_HTML2CANVAS_LOADING) return await window.__VOICE_GUIDE_HTML2CANVAS_LOADING;
+      if (typeof window.html2canvas === "function") return window.html2canvas;
+
+      window.__VOICE_GUIDE_HTML2CANVAS_LOADING = new Promise((resolve, reject) => {
+        const script = document.createElement("script");
+        script.src = "https://unpkg.com/html2canvas@1.4.1/dist/html2canvas.min.js";
+        script.async = true;
+        script.onload = () => {
+          if (typeof window.html2canvas === "function") resolve(window.html2canvas);
+          else reject(new Error("html2canvas loaded but missing global"));
+        };
+        script.onerror = () => reject(new Error("Failed to load html2canvas"));
+        document.head.appendChild(script);
+      });
+
+      try {
+        return await window.__VOICE_GUIDE_HTML2CANVAS_LOADING;
+      } finally {
+        // keep the resolved promise cached
+      }
+    };
+
+    const downloadBlob = (blob, filename) => {
+      const safeName = (typeof filename === "string" && filename.trim()) ? filename.trim() : "screenshot.png";
+      const a = document.createElement("a");
+      const url = URL.createObjectURL(blob);
+      a.href = url;
+      a.download = safeName;
+      a.rel = "noopener";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 15_000);
+      return safeName;
+    };
+
+    const blobToBase64 = async (blob) => {
+      const buf = await blob.arrayBuffer();
+      const bytes = new Uint8Array(buf);
+      let binary = "";
+      // Chunk to avoid call stack limits.
+      const chunk = 0x8000;
+      for (let i = 0; i < bytes.length; i += chunk) {
+        binary += String.fromCharCode(...bytes.subarray(i, i + chunk));
+      }
+      return btoa(binary);
+    };
+
+    const sendImageToModel = (base64, mimeType, note) => {
+      if (!base64 || !mimeType) return false;
+      if (!this.socket || this.socket.readyState !== 1) return false;
+
+      this.socket.send(JSON.stringify({
+        clientContent: {
+          turns: [{
+            role: "user",
+            parts: [
+              { text: note || "Screenshot captured." },
+              { inlineData: { mimeType, data: base64 } }
+            ]
+          }],
+          turnComplete: true
+        }
+      }));
+      return true;
     };
 
     const functionResponses = [];
@@ -889,7 +965,107 @@ class VoiceGuide extends HTMLElement {
                 response = { status: "ok", result: String(result) };
               }
             }
-          } else if (action === "upload" || action === "screenshot" || action === "pdf") {
+          } else if (action === "screenshot") {
+            // Best-effort screenshot via DOM-to-canvas rendering.
+            // Note: may fail on strict CSP pages or with cross-origin images.
+            const full = Boolean(args.full);
+            const suggested = typeof args.path === "string" ? args.path : "";
+            const format = args.format === "png" ? "png" : "jpeg";
+            const ext = format === "png" ? ".png" : ".jpg";
+            const filename = suggested
+              ? (suggested.endsWith(ext) ? suggested : (suggested + ext))
+              : (format === "png" ? "screenshot.png" : "screenshot.jpg");
+            const download = Boolean(args.download);
+            // IMPORTANT: Don't put large base64 in toolResponse. Instead, send as clientContent inlineData.
+            const returnToModel = args.returnToModel === undefined ? true : Boolean(args.returnToModel);
+            const maxWidth = (typeof args.maxWidth === "number" && Number.isFinite(args.maxWidth) && args.maxWidth > 0) ? args.maxWidth : 900;
+            const maxHeight = (typeof args.maxHeight === "number" && Number.isFinite(args.maxHeight) && args.maxHeight > 0) ? args.maxHeight : 900;
+            const quality = (typeof args.quality === "number" && Number.isFinite(args.quality)) ? Math.max(0.1, Math.min(0.95, args.quality)) : 0.72;
+
+            try {
+              const html2canvas = await loadHtml2Canvas();
+              const root = document.documentElement;
+
+              const canvas = await html2canvas(root, {
+                backgroundColor: "#ffffff",
+                scale: Math.min(2, window.devicePixelRatio || 1),
+                useCORS: true,
+                allowTaint: false,
+                // Capture visible viewport by default; full page if requested
+                width: full ? root.scrollWidth : window.innerWidth,
+                height: full ? root.scrollHeight : window.innerHeight,
+                windowWidth: root.scrollWidth,
+                windowHeight: root.scrollHeight,
+                scrollX: 0,
+                scrollY: 0
+              });
+
+              // Downscale to keep tool payload reasonable.
+              let outCanvas = canvas;
+              const scaleDown = Math.min(1, maxWidth / canvas.width, maxHeight / canvas.height);
+              if (scaleDown < 1) {
+                const c = document.createElement("canvas");
+                c.width = Math.max(1, Math.round(canvas.width * scaleDown));
+                c.height = Math.max(1, Math.round(canvas.height * scaleDown));
+                const cctx = c.getContext("2d");
+                if (cctx) {
+                  cctx.drawImage(canvas, 0, 0, c.width, c.height);
+                  outCanvas = c;
+                }
+              }
+
+              const mimeType = format === "png" ? "image/png" : "image/jpeg";
+              const blob = await new Promise((resolve) => outCanvas.toBlob(resolve, mimeType, format === "png" ? undefined : quality));
+              if (!blob) {
+                response = { status: "error", action: "screenshot", error: "Failed to encode PNG" };
+              } else {
+                let savedAs;
+                if (download) {
+                  savedAs = downloadBlob(blob, filename);
+                }
+
+                // Expose last screenshot URL for manual inspection.
+                try {
+                  window.VOICE_GUIDE_LAST_SCREENSHOT_URL = URL.createObjectURL(blob);
+                } catch {
+                  // ignore
+                }
+
+                if (returnToModel) {
+                  const base64 = await blobToBase64(blob);
+                  const sent = sendImageToModel(base64, mimeType, "Here is a screenshot of the current page. Use it to answer my next request.");
+                  response = {
+                    status: sent ? (download ? "downloaded_and_sent" : "sent") : (download ? "downloaded" : "ok"),
+                    action: "screenshot",
+                    full,
+                    filename: savedAs,
+                    bytes: blob.size,
+                    width: outCanvas.width,
+                    height: outCanvas.height,
+                    mimeType
+                  };
+                } else {
+                  response = {
+                    status: download ? "downloaded" : "ok",
+                    action: "screenshot",
+                    full,
+                    filename: savedAs,
+                    bytes: blob.size,
+                    width: outCanvas.width,
+                    height: outCanvas.height,
+                    mimeType
+                  };
+                }
+              }
+            } catch (e) {
+              response = {
+                status: "error",
+                action: "screenshot",
+                error: String(e?.message || e),
+                hint: "May be blocked by page CSP or cross-origin images."
+              };
+            }
+          } else if (action === "upload" || action === "pdf") {
             response = { status: "not_supported", action, reason: "Browser security restrictions in an embedded widget" };
           } else if (action === "close") {
             window.close();
