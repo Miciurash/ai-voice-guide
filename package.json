@@ -1,0 +1,26 @@
+{
+  "name": "ai-voice-guide",
+  "version": "1.0.0",
+  "description": "A widget to use AIi Voice agents on any web page.",
+  "homepage": "https://github.com/Miciurash/ai-voice-guide#readme",
+  "bugs": {
+    "url": "https://github.com/Miciurash/ai-voice-guide/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Miciurash/ai-voice-guide.git"
+  },
+  "license": "ISC",
+  "author": "Mircea Trofimciuc",
+  "type": "commonjs",
+  "main": "src/index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "devDependencies": {},
+  "dependencies": {
+    "@google/genai": "^1.37.0",
+    "mic": "^2.1.2",
+    "speaker": "^0.5.5"
+  }
+}
